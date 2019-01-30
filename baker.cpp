@@ -1,5 +1,5 @@
 #include "/usr/local/dislin/discpp.h"
-#include "/Users/leacook/projects/thesis/rc/rc.cpp"
+#include "/Users/allense/projects/thesis/rc/rc.cpp"
 int main ()
 {
     int steps = 100;
