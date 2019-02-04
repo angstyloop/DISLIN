@@ -103,18 +103,16 @@ double EchoStateNetwork::PlotRidgeTrace ()
     return b;
 }
 
-double MyFunc(double x) { return sin(x)*cos(3*x); }
-
 int main() {
     int psteps = 100;               //target number of predicted steps
     int tsteps = 100;               //target number of training steps
     int steps = psteps + tsteps;    //number of total steps
     double step_size = .1;          //step size for ScalarFunction constructor
-    int N = 10;                      //number of nodes
+    int N = 5;                      //number of nodes
     double b = .0001;
 
     // Generate sine output, wash it, and put it in an array.
-    DiscreteTimeSeries* sine = new ScalarFunction(MyFunc, 0, steps, step_size);
+    DiscreteTimeSeries* sine = new ScalarFunction(sin, 0, steps, step_size);
     sine->Listen();
 
     Vector esn_start(N);            //reservoir initial state
@@ -132,7 +130,7 @@ int main() {
     
     // generate reservoir series, wash, ridgetrace, train, and
     //  get predicted output into an array
-    sine = new ScalarFunction(MyFunc, 0, steps, step_size);
+    sine = new ScalarFunction(sin, 0, steps, step_size);
     EchoStateNetwork esn (esn_start, sine, steps);
     esn.RandomParms(.5,.5);
     esn.Listen();
@@ -189,7 +187,7 @@ int main() {
   
     // try to account for offset: experimental
     double shift = 3.75;
-    //
+
     for (int i=0; i<psteps; ++i)
         xray[i]+=shift;
 

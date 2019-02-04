@@ -1,3 +1,5 @@
+#include <boost/numeric/odeint.hpp>
+#include <boost/multiprecision/cpp_dec_float.hpp>
 #include<iostream>
 #include <cmath>
 #include <cstring>
@@ -6,6 +8,7 @@
 #include "/usr/local/dislin/discpp.h"
 #include "/Users/allense/projects/thesis/rc/rc.cpp"
 
+typedef boost::multiprecision::cpp_dec_float_50 value_type;
 
 double EchoStateNetwork::PlotRidgeTrace ()
 { 
@@ -103,101 +106,127 @@ double EchoStateNetwork::PlotRidgeTrace ()
     return b;
 }
 
-double MyFunc(double x) { return sin(x)*cos(3*x); }
-
 int main() {
-    int psteps = 100;               //target number of predicted steps
-    int tsteps = 100;               //target number of training steps
+    int psteps = 50;               //target number of predicted steps
+    int tsteps = 50;               //target number of training steps
     int steps = psteps + tsteps;    //number of total steps
-    double step_size = .1;          //step size for ScalarFunction constructor
-    int N = 10;                      //number of nodes
-    double b = .0001;
+    int N = 100;                      //number of nodes
+    double b = .00001;
+    double c = 2;  //side length of baker domain square
 
-    // Generate sine output, wash it, and put it in an array.
-    DiscreteTimeSeries* sine = new ScalarFunction(MyFunc, 0, steps, step_size);
-    sine->Listen();
+    // Generate bm output, wash it, and put it in an array.
+    Vector bm_start(2);
+    Vector rando(1);
+    rando.random(1,-c/2,c/2);
+    bm_start[0]=rando[0];
+    rando.random(1,-c/2,c/2);
+    bm_start[1]=rando[0];
+    rando.random(1,.01,.49);
+    double a = rando[0];
+
+    DiscreteTimeSeries* bm = new BakersMap(bm_start, steps, a, c);
+    bm->Listen();
 
     Vector esn_start(N);            //reservoir initial state
     esn_start.random(N, -1, 1);
 
-     double** sin_series = new double*[sine->Dim()];
-     for (int i=0; i<sine->Dim(); ++i) {
-         sin_series[i] = new double[psteps];
+     double** bm_series = new double*[bm->Dim()];
+     for (int i=0; i<bm->Dim(); ++i) {
+         bm_series[i] = new double[psteps];
          for (int j=psteps; j<steps; ++j) {
-             sin_series[i][j-psteps] = (*sine)[j][i];
+             bm_series[i][j-psteps] = (*bm)[j][i];
          }
      }
 
-    delete sine;
+    delete bm;
     
     // generate reservoir series, wash, ridgetrace, train, and
     //  get predicted output into an array
-    sine = new ScalarFunction(MyFunc, 0, steps, step_size);
-    EchoStateNetwork esn (esn_start, sine, steps);
+    bm = new BakersMap(bm_start, steps, a, c);
+    EchoStateNetwork esn (esn_start, bm, steps);
     esn.RandomParms(.5,.5);
     esn.Listen();
     esn.Wash(psteps);
-
+    
+    // some code for user input 
     //esn.SetB(esn.PlotRidgeTrace());
-    /*std::cout << "Enter ridge regression parameter: " << std::endl;
-    std::string s;
-    double b;
-    getline(std::cin, s);
-    std::stringstream(s) >> b;*/
+    //std::cout << "Enter ridge regression parameter: " << std::endl;
+    //std::string s;
+    //double b;
+    //getline(std::cin, s);
+    //std::stringstream(s) >> b;
+
+    // if you want to just set b here instead ...
     esn.SetB(b);
+    ((BakersMap*)bm)->SetC(c); 
+    // the inverse of the output function: arc tanh
+    //for (int i=0; i<tsteps; ++i) {
+    //    (*bm)[i][0] = atanh((*bm)[i][0]);
+    //    (*bm)[i][1] = atanh((*bm)[i][1]);
+    //}
 
     esn.Train();
     esn.Predict();
 
-    double** pred_series = new double*[sine->Dim()];
+    double** pred_series = new double*[bm->Dim()];
 
-    for (int i=0; i<sine->Dim(); ++i) {
+    for (int i=0; i<bm->Dim(); ++i) {
         pred_series[i] = new double[psteps];
         for (int j=tsteps; j<steps; ++j) {
-            pred_series[i][j-tsteps] = (*sine)[j][i];
+            pred_series[i][j-tsteps] = (*bm)[j][i];
         }
     }
-    
-    //for (int i=0; i<sine->Dim(); ++i) {
-    //    for (int j=0; j<psteps; ++j)
-    //        std::cout << pred_series[i][j] << "   " << sin_series[i][j] << std::endl;
-    //    std::cout << std::endl;
-    //}
+
+    for (int i=0; i<bm->Dim(); ++i) {
+        for (int j=0; j<psteps; ++j)
+            std::cout << pred_series[i][j] << "   " << bm_series[i][j] << std::endl;
+        std::cout << std::endl;
+    }
     
 
-    double xray[psteps];
-    double yray[psteps];
+    double nray[psteps];
+    double bakeray[psteps];
     
     for (int i=tsteps; i<steps; ++i)
         //std::cout<< 0+i*step_size << std::endl;
-        xray[i-tsteps] = 0 + i*step_size;
+        nray[i-tsteps] = i;
     
+    //for (int i=0; i<psteps; ++i)
+        //std::cout << nray[i] << " ";
+    //std::cout << std::endl;
+
     Dislin g;
     g.metafl("CONS");
     g.setpag("USEL");
     g.disini();
+    g.incmrk(-1);
     g.axslen (10000, 5000);
     g.axspos (500, 5500);
-    g.graf (xray[0], xray[psteps-1], xray[0], .5, -1, 1, -1, 0.5);
-    //g.axgit();
+    g.graf (nray[0], nray[psteps-1], nray[0], 10, -1, 1, -1, .5);
      
-    // plot sin series
-    for (int j=0; j<psteps; ++j)
-        yray[j] = sin_series[0][j];
+    // plot y component of bakers series
+    for (int j=0; j<psteps; ++j) {
+        bakeray[j] = bm_series[1][j];
+        //std::cout<< bakeray[j] << " ";
+    }
+    //std::cout<<std::endl;
     g.color("BLUE");
-    g.curve(xray, yray, psteps);
+    g.curve(nray, bakeray, psteps);
+
   
     // try to account for offset: experimental
-    double shift = 3.75;
-    //
-    for (int i=0; i<psteps; ++i)
-        xray[i]+=shift;
+    //double shift = 3.75;
+    //for (int i=0; i<psteps; ++i)
+    //    nray[i]+=shift;
 
-    //plot predicted series
-    for (int j=0; j<psteps; ++j)
-        yray[j] = pred_series[0][j];
+    //plot x component predicted series
+    for (int j=0; j<psteps; ++j) {  
+        bakeray[j] = pred_series[0][j];
+        //std::cout<< bakeray[j] << " ";
+    }
+    //std::cout<<std::endl;
     g.color("RED");
-    g.curve(xray, yray, psteps);
+    g.curve(nray, bakeray, psteps);
 
     g.disfin();
     return 0;
