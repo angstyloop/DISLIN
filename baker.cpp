@@ -1,10 +1,11 @@
 #include "/usr/local/dislin/discpp.h"
 #include "/Users/allense/projects/thesis/rc/rc.cpp"
 #include <iomanip>
+
 int main ()
 {
     int steps = 75;
-    xdouble x_0, y_0, a, c=2;
+    double x_0, y_0, a, c=2;
     //dx = dy = 1;
     //generate a random value
     Vector rando(1);
@@ -15,8 +16,8 @@ int main ()
     rando.random(1,-1,1);
     y_0 = rando[0];
     std::cout<<x_0 << " " << y_0<<std::endl<<std::endl;
-    xdouble* x= new xdouble[steps];
-    xdouble* y = new xdouble[steps];
+    double* x= new double[steps];
+    double* y = new double[steps];
     Vector start(2);
     start[0] = x_0;
     start[1] = y_0;

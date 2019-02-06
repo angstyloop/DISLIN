@@ -1,14 +1,12 @@
-#include <boost/numeric/odeint.hpp>
-#include <boost/multiprecision/cpp_dec_float.hpp>
-#include<iostream>
+#include <iostream>
 #include <cmath>
 #include <cstring>
 #include <string>
 #include <sstream>
 #include "/usr/local/dislin/discpp.h"
 #include "/Users/allense/projects/thesis/rc/rc.cpp"
+#include <boost/math/constants/constants.hpp>
 
-typedef boost::multiprecision::cpp_dec_float_50 value_type;
 
 double EchoStateNetwork::PlotRidgeTrace ()
 { 
@@ -107,22 +105,23 @@ double EchoStateNetwork::PlotRidgeTrace ()
 }
 
 int main() {
-    int psteps = 50;               //target number of predicted steps
-    int tsteps = 50;               //target number of training steps
+    xdouble pi = boost::math::constants::pi<xdouble>();
+
+    int psteps = 500;               //target number of predicted steps
+    int tsteps = 3000;               //target number of training steps
     int steps = psteps + tsteps;    //number of total steps
     int N = 100;                      //number of nodes
     double b = .00001;
     double c = 2;  //side length of baker domain square
 
     // Generate bm output, wash it, and put it in an array.
-    Vector bm_start(2);
     Vector rando(1);
-    rando.random(1,-c/2,c/2);
-    bm_start[0]=rando[0];
-    rando.random(1,-c/2,c/2);
-    bm_start[1]=rando[0];
     rando.random(1,.01,.49);
     double a = rando[0];
+    
+    Vector bm_start(2);
+    bm_start[0]=double(2/(pi*pi));
+    bm_start[1]=double(1./3);
 
     DiscreteTimeSeries* bm = new BakersMap(bm_start, steps, a, c);
     bm->Listen();
@@ -139,6 +138,7 @@ int main() {
      }
 
     delete bm;
+
     
     // generate reservoir series, wash, ridgetrace, train, and
     //  get predicted output into an array
@@ -166,7 +166,13 @@ int main() {
     //}
 
     esn.Train();
-    esn.Predict();
+    //esn.Predict();
+    // indices is an array of indices of input vectors that we want to observe
+    const int indices_length = 1;
+    int indices[indices_length]= {0}; //observe the x component
+   
+    // starts observing at index curr, which is where Wash() leaves off
+    esn.Observe(indices, indices_length);
 
     double** pred_series = new double*[bm->Dim()];
 
@@ -204,9 +210,9 @@ int main() {
     g.axspos (500, 5500);
     g.graf (nray[0], nray[psteps-1], nray[0], 10, -1, 1, -1, .5);
      
-    // plot y component of bakers series
+    // plot x component of bakers series
     for (int j=0; j<psteps; ++j) {
-        bakeray[j] = bm_series[1][j];
+        bakeray[j] = bm_series[0][j];
         //std::cout<< bakeray[j] << " ";
     }
     //std::cout<<std::endl;
