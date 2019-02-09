@@ -104,10 +104,10 @@ double EchoStateNetwork::PlotRidgeTrace ()
     return b;
 }
 
-// save 2-d array of Vectors from DiscreteTimeSeries *bm to a (tposed) 2-d array bm_series
+// save 2-d array of Vectors from DiscreteTimeSeries *sine to a (tposed) 2-d array sine_series
 
 void Save_Pred (double** pred_series, EchoStateNetwork* esn) {
-    // save bm_series; write a function Save(double bm_series**, DiscreteTimeSeries* bm);
+    // save sine_series; write a function Save(double sine_series**, DiscreteTimeSeries* sine);
     for (int i=0; i<esn->In_Series_Dim(); ++i) {
         for (int j=0; j<esn->Steps(); ++j) {
             pred_series[i][j] = esn->In_Series(j)[i];
@@ -124,46 +124,47 @@ void Save_OG (double** og_series, EchoStateNetwork* esn) {
 }
 
 int main() {
-    xdouble pi = boost::math::constants::pi<xdouble>();
 
     int wsteps = 100;
     int tsteps = 100;               //target number of training steps
     int steps = 200;                 //number of total steps
-    int N =20;                      //number of nodes
+    int N =5;                      //number of nodes
+    double step_size = .1;          //step size for ScalarFunction constructor
     double b = .0000001; 
-    double c = 2;  //side length of baker domain square
 
-    // Generate bm output, wash it, and put it in an array.
-    Vector rando(1);
-    rando.random(1,.01,.49);
-    double a = 1./3;;
+    // Generate sine output, wash it, and put it in an array.
     
-    Vector bm_start(2);
     Vector esn_start(N);            //reservoir initial state
     esn_start.random(N, -1, 1);
 
-    DiscreteTimeSeries* bm = new BakersMap(bm_start, steps, a, c);
-    EchoStateNetwork esn (esn_start, bm, steps);
+    DiscreteTimeSeries* sine = new ScalarFunction(sin, 0, steps, step_size);
+    EchoStateNetwork esn (esn_start, sine, steps);
     esn.RandomParms(.5,.5, 1);
     
     esn.SetB(b);
-    ((BakersMap*)bm)->SetC(c); 
 
     // populate esn.series with steps number of values
     esn.Listen();
+   
+        
+
+    // check on sine_series
 
     //washes out the first wsteps values. moves remaining to front and zeroes openings.
     //  make sure wsteps < steps ! 
     esn.Wash(wsteps);
 
+
     // train for tsteps number of steps
     esn.Train(tsteps); //tsteps < steps-wsteps
+
 
     // at this point we should have W_out and an array with one value in it.
     
     // fill the array with predicted values ( a total of steps-1 iterations )
     esn.Predict(); 
-    
+   
+
     // some code for user input 
     //esn.SetB(esn.PlotRidgeTrace());
     //std::cout << "Enter ridge regression parameter: " << std::endl;
@@ -179,22 +180,24 @@ int main() {
     //int indices[indices_length]= {0}; //observe the x component
     //esn.Observe(indices, indices_length);
 
-    // initialize 2-d array to hold the original bakers series terms during prediction period
-    double** og_series = new double*[bm->Dim()];
-    for (int i=0; i<bm->Dim(); ++i) 
+    // initialize 2-d array to hold the original sine series terms during prediction period
+    double** og_series = new double*[sine->Dim()];
+    for (int i=0; i<sine->Dim(); ++i) 
         og_series[i] = new double[steps];
 
     // initialize 2-d array to hold predicted series terms 
-    double** pred_series = new double*[bm->Dim()];
-    for (int i=0; i<bm->Dim(); ++i) 
+    double** pred_series = new double*[sine->Dim()];
+    for (int i=0; i<sine->Dim(); ++i) 
         pred_series[i] = new double[steps];
 
     Save_Pred(pred_series, &esn);
     Save_OG(og_series, &esn);
    
-    double nray[steps];
+    double xray[steps];
+
     for (int i=0; i<steps; ++i)
-        nray[i] = i;
+        //std::cout<< 0+i*step_size << std::endl;
+        xray[i] = 0 + (wsteps+tsteps+i)*step_size;
 
     Dislin g;
     g.metafl("CONS");
@@ -203,16 +206,17 @@ int main() {
     g.incmrk(-1);
     g.axslen (10000, 5000);
     g.axspos (500, 5500);
-    g.graf (nray[0], 75, nray[0], 10, -5, 5, -1, .5);
+    g.graf (xray[0], xray[steps-1], xray[0], 50, -2, 2, -2, .5);
      
     double inray[steps];
-    // plot x component of bakers series
+
+    // plot x component of sine series (it's the only component)
     for (int j=0; j<steps; ++j) {
         inray[j] = og_series[0][j];
-        //std::cout<< inray[j] << std::endl;
+        //std::cout << inray[j] << std::endl;
     }
     g.color("BLUE");
-    g.curve(nray, inray, steps);
+    g.curve(xray, inray, steps);
 
   
     // try to account for offset: experimental
@@ -223,12 +227,12 @@ int main() {
     //plot x component predicted series
     for (int j=0; j<steps; ++j) {  
         inray[j] = pred_series[0][j];
-        std::cout<< inray[j] << std::endl;
+        //std::cout<< inray[j] << std::endl;
     }
 
    //std::cout<<"predicted: " << bakeray[0] << bakeray[1] << std::endl;
     g.color("RED");
-    g.curve(nray, inray, steps);
+    g.curve(xray, inray, steps);
 
     g.disfin();
     return 0;

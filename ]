@@ -104,65 +104,47 @@ double EchoStateNetwork::PlotRidgeTrace ()
     return b;
 }
 
-// save 2-d array of Vectors from DiscreteTimeSeries *bm to a (tposed) 2-d array bm_series
-
-void Save_Pred (double** pred_series, EchoStateNetwork* esn) {
-    // save bm_series; write a function Save(double bm_series**, DiscreteTimeSeries* bm);
-    for (int i=0; i<esn->In_Series_Dim(); ++i) {
-        for (int j=0; j<esn->Steps(); ++j) {
-            pred_series[i][j] = esn->In_Series(j)[i];
-        }
-    }
-}
-
-void Save_OG (double** og_series, EchoStateNetwork* esn) {
-    for (int i=0; i<esn->In_Series_Dim(); ++i) {
-        for (int j=0; j<esn->Steps(); ++j) {
-            og_series[i][j] = esn->OG_Series(j)[i];
-        }
-    }
-}
-
 int main() {
     xdouble pi = boost::math::constants::pi<xdouble>();
 
-    int wsteps = 100;
-    int tsteps = 100;               //target number of training steps
-    int steps = 200;                 //number of total steps
-    int N =20;                      //number of nodes
-    double b = .0000001; 
+    int psteps = 50;               //target number of predicted steps
+    int tsteps = 150;               //target number of training steps
+    int steps = psteps + tsteps;    //number of total steps
+    int N = 5;                      //number of nodes
+    double b = .0000000001; 
     double c = 2;  //side length of baker domain square
 
     // Generate bm output, wash it, and put it in an array.
     Vector rando(1);
     rando.random(1,.01,.49);
-    double a = 1./3;;
+    double a = 1./3;
     
     Vector bm_start(2);
+
+    DiscreteTimeSeries* bm = new BakersMap(bm_start, steps, a, c);
+    bm->Listen();
+
     Vector esn_start(N);            //reservoir initial state
     esn_start.random(N, -1, 1);
 
-    DiscreteTimeSeries* bm = new BakersMap(bm_start, steps, a, c);
+     double** bm_series = new double*[bm->Dim()];
+     for (int i=0; i<bm->Dim(); ++i) {
+         bm_series[i] = new double[psteps];
+         for (int j=0; j<psteps; ++j) {
+             bm_series[i][j] = (*bm)[tsteps+j][i];
+         }
+     }
+
+    delete bm;
+
+    
+    // generate reservoir series, wash, ridgetrace, train, and
+    //  get predicted output into an array
+    bm = new BakersMap(bm_start, steps, a, c);
     EchoStateNetwork esn (esn_start, bm, steps);
     esn.RandomParms(.5,.5, 1);
-    
-    esn.SetB(b);
-    ((BakersMap*)bm)->SetC(c); 
-
-    // populate esn.series with steps number of values
     esn.Listen();
-
-    //washes out the first wsteps values. moves remaining to front and zeroes openings.
-    //  make sure wsteps < steps ! 
-    esn.Wash(wsteps);
-
-    // train for tsteps number of steps
-    esn.Train(tsteps); //tsteps < steps-wsteps
-
-    // at this point we should have W_out and an array with one value in it.
-    
-    // fill the array with predicted values ( a total of steps-1 iterations )
-    esn.Predict(); 
+    esn.Wash(psteps);
     
     // some code for user input 
     //esn.SetB(esn.PlotRidgeTrace());
@@ -172,6 +154,18 @@ int main() {
     //getline(std::cin, s);
     //std::stringstream(s) >> b;
 
+    // if you want to just set b here instead ...
+    esn.SetB(b);
+    ((BakersMap*)bm)->SetC(c); 
+    // the inverse of the output function: arc tanh
+    //for (int i=0; i<tsteps; ++i) {
+    //    (*bm)[i][0] = atanh((*bm)[i][0]);
+    //    (*bm)[i][1] = atanh((*bm)[i][1]);
+    //}
+
+    esn.Train();
+    esn.Predict();
+
    
     // starts observing at index curr, which is where Train() leaves off.
     // indices is an array of indices of input vectors that we want to observe.
@@ -179,22 +173,19 @@ int main() {
     //int indices[indices_length]= {0}; //observe the x component
     //esn.Observe(indices, indices_length);
 
-    // initialize 2-d array to hold the original bakers series terms during prediction period
-    double** og_series = new double*[bm->Dim()];
-    for (int i=0; i<bm->Dim(); ++i) 
-        og_series[i] = new double[steps];
-
-    // initialize 2-d array to hold predicted series terms 
     double** pred_series = new double*[bm->Dim()];
-    for (int i=0; i<bm->Dim(); ++i) 
-        pred_series[i] = new double[steps];
 
-    Save_Pred(pred_series, &esn);
-    Save_OG(og_series, &esn);
+    for (int i=0; i<bm->Dim(); ++i) {
+        pred_series[i] = new double[psteps];
+        for (int j=tsteps; j<steps; ++j) {
+            pred_series[i][j-tsteps] = (*bm)[j][i];
+        }
+    }
    
-    double nray[steps];
-    for (int i=0; i<steps; ++i)
-        nray[i] = i;
+    double nray[psteps];
+    for (int i=tsteps; i<steps; ++i)
+        nray[i-tsteps] = i;
+
 
     Dislin g;
     g.metafl("CONS");
@@ -203,16 +194,17 @@ int main() {
     g.incmrk(-1);
     g.axslen (10000, 5000);
     g.axspos (500, 5500);
-    g.graf (nray[0], 75, nray[0], 10, -5, 5, -1, .5);
+    g.graf (nray[0], nray[psteps-1], nray[0], 1, -2, 2, -1, .5);
      
-    double inray[steps];
+    double bakeray[psteps];
     // plot x component of bakers series
-    for (int j=0; j<steps; ++j) {
-        inray[j] = og_series[0][j];
-        //std::cout<< inray[j] << std::endl;
+    for (int j=0; j<psteps; ++j) {
+        bakeray[j] = bm_series[0][j];
+        //std::cout<< bakeray[j] << std::endl;
     }
+   //std::cout<<"actual: " << bakeray[0] << bakeray[1] << std::endl;
     g.color("BLUE");
-    g.curve(nray, inray, steps);
+    g.curve(nray, bakeray, psteps);
 
   
     // try to account for offset: experimental
@@ -221,16 +213,14 @@ int main() {
     //    nray[i]+=shift;
 
     //plot x component predicted series
-    for (int j=0; j<steps; ++j) {  
-        inray[j] = pred_series[0][j];
-        std::cout<< inray[j] << std::endl;
+    for (int j=0; j<psteps; ++j) {  
+        bakeray[j] = pred_series[0][j];
+        //std::cout<< bakeray[j] << " ";
     }
-
    //std::cout<<"predicted: " << bakeray[0] << bakeray[1] << std::endl;
     g.color("RED");
-    g.curve(nray, inray, steps);
+    g.curve(nray, bakeray, psteps);
 
     g.disfin();
     return 0;
-} 
-
+}
