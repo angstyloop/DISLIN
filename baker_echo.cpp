@@ -117,6 +117,7 @@ int main() {
     g.curve(nray, inray, steps);
 
     g.disfin();
+
     return 0;
 } 
 
