@@ -7,18 +7,15 @@
 #include "/Users/allense/projects/thesis/rc/rc.cpp"
 #include <boost/math/constants/constants.hpp>
 
-double novel_function (double x) {
-    return .5;
-}
 int main() {
     xdouble pi = boost::math::constants::pi<xdouble>();
 
     int wsteps = 1000;
-    int tsteps = 1000;               //target number of training steps
-    int steps = 2000;                 //number of total steps
-    int N =5;                      //number of nodes
-    double b = .0000001; 
-    double c = 2;  //side length of baker domain square
+    int tsteps = 1000;             // target number of training steps
+    int steps = 2000;              // number of total steps
+    int N =5;                      // number of nodes
+    double b = .0000001;           // ridge regression parameter (beta)
+    double c = 2;  // side length of baker domain square
 
     // Generate bm output, wash it, and put it in an array.
     Vector rando(1);
@@ -65,7 +62,7 @@ int main() {
     //int indices[indices_length]= {0}; //observe the x component
     //esn.Observe(indices, indices_length);
 
-    // initialize 2-d array to hold the original bakers series terms during prediction period
+    // initialize 2-d array to hold the original bakers series terms
     double** og_series = new double*[novel_series->Dim()];
     for (int i=0; i<novel_series->Dim(); ++i) 
         og_series[i] = new double[steps];
