@@ -36,7 +36,7 @@ int main() {
     EchoStateNetwork esn (esn_start, data, steps);
     
     // randomly generates internal matrices
-    esn.RandomParms(.5, .5, 1);
+    //esn.RandomParms(.5, .5, 1);
 
     // sets rr parameter
     esn.SetB(b);
@@ -75,14 +75,14 @@ int main() {
         og_series[i] = new double[steps];
 
     // save original terms
-    Save_OG(og_series, &esn);
+    esn.Save_OG(og_series);
 
     // initialize 2-d array to hold predicted series terms
     double** pred_series = new double*[data->Dim()];
     for (int i=0; i<data->Dim(); ++i)
         pred_series[i] = new double[steps];
 
-    Save_Pred(pred_series, &esn);
+    esn.Save_Pred(pred_series);
 
     // initialize dislin and set it up
     Dislin g;
@@ -103,9 +103,9 @@ int main() {
     // a temp array to use with Dislin::curve()
     double* inray = new double[steps];
 
-    // plot z component of Lorenz series for steps number of steps
+    // plot x component of Lorenz series for steps number of steps
     for (int j=0; j<steps; ++j) {
-        inray[j] = og_series[1][j];
+        inray[j] = og_series[0][j];
         // let's just print instead.
         //std::cout<< inray[j] << std::endl;
     }
@@ -114,7 +114,7 @@ int main() {
 
     //plot z component predicted series
     for (int j=0; j<steps; ++j) {
-        inray[j] = pred_series[1][j];
+        inray[j] = pred_series[0][j];
         // let's just print instead
         //std::cout<< inray[j] << std::endl;
     }

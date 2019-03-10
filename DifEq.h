@@ -1,4 +1,4 @@
-#include <iostream>
+//#include <iostream>
 #include <cmath>
 #include "/usr/local/dislin/discpp.h"
 #include "/Users/allense/projects/thesis/rc/rc.cpp"
