@@ -4,7 +4,7 @@
 
 int main ()
 {
-    int steps = 75;
+    int steps = 50;
     double x_0, y_0, a, c=2;
     //dx = dy = 1;
     //generate a random value
@@ -18,6 +18,9 @@ int main ()
     std::cout<<x_0 << " " << y_0<<std::endl<<std::endl;
     double* x= new double[steps];
     double* y = new double[steps];
+    double* n = new double[steps];
+    for (int i=0; i<steps; ++i )
+        n[i] = i;
     Vector start(2);
     start[0] = x_0;
     start[1] = y_0;
@@ -30,17 +33,23 @@ int main ()
         std::cout << std::setprecision(10);
         std::cout<< x[i] << " " << y[i] <<std::endl;
     }
-    /*Dislin g;   
-    g.metafl("XWIN");
-    g.page(3000, 3000);
-    g.disini();
-    g.axspos(500, 2500);
-    g.axslen(2000, 2000);
-    g.labdig(2, "x");
-    g.ticks(10, "xy");
-    g.graf(0, 1.01, 0, .5, 0, 1.01, 0, .5);
-    g.incmrk(-1);
-    //g.color("red");
-    g.curve(x, y, steps);
-    g.disfin();*/
+     Dislin g;
+     g.metafl("CONS");
+     g.setpag("USEL");
+     g.disini();
+ 
+     //g.incmrk(-1); //want points instead of smooth lines? uncomment.
+     g.axslen (10000, 5000);
+     g.incmrk(-1);
+     g.axspos (500, 5500);
+     g.graf(0, steps, 0, 10, -1, 1, 1, 1);
+     g.color("RED");
+     g.curve(n, y, steps);
+
+     g.color("BLUE");
+     // change x to have dummy values decaying to zero
+     for (int i=0; i<steps; ++i)
+         y[] = y[8] * pow(.5, i);
+     g.curve(n,x,steps);
+     g.disfin();
 }

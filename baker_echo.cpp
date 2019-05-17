@@ -23,6 +23,7 @@ int main() {
     double a = 1./3;;
     
     Vector bm_start(2);
+    bm_start[0] = bm_start[1] = .5;
     Vector esn_start(N);            //reservoir initial state
     esn_start.random(N, -1, 1);
 
@@ -46,15 +47,15 @@ int main() {
     // at this point we should have W_out and an array with one value in it.
     
     // fill the array with predicted values ( a total of steps-1 iterations )
-    //esn.Predict(); 
+    esn.Predict(); 
     
 // Drive the esn with a novel input series, stored as a 2d array where the columns are vectors. 
       
     // Make a novel series. in this case, a sine wave with half the amplitude. 
-    DiscreteTimeSeries* novel_series = new BakersMap(bm_start, steps, 2*a/5, c); 
+    //DiscreteTimeSeries* novel_series = new BakersMap(bm_start, steps, 2*a/5, c); 
   
     // use the novel input series to drive the esn 
-    esn.Drive(novel_series); 
+    //esn.Drive(novel_series); 
    
     // starts observing at index curr, which is where Train() leaves off.
     // indices is an array of indices of input vectors that we want to observe.

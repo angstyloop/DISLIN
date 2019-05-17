@@ -10,9 +10,13 @@ int main () {
     a[0] = a[1] = a[2] = 1;
     DiscreteTimeSeries* data = new LorenzApprox(a, steps);
     EchoStateNetwork esn(esn_start, data, steps);
+    std::cout<<"starting Tune"<<std::endl;
     esn.Tune();
+    std::cout<<"Tune OK"<<std::endl;
     esn.Listen();
+    std::cout<<"Listen OK"<<std::endl;
     esn.Train(tsteps);
+    //std::cout<<"Train OK"<<std::endl;
     // predict with optimal parameters
     esn.Predict();
     
@@ -50,7 +54,7 @@ int main () {
     //g.incmrk(-1); //want points instead of smooth lines? uncomment.
     g.axslen (10000, 5000);
     g.axspos (500, 5500);
-    g.graf (tray[0], tray[0]+1000*dt, tray[0], 1, -50, 50, -50, 10);
+    g.graf (tray[0], tray[0]+2000*dt, tray[0], 500, -50, 50, -50, 10);
 
     // a temp array to use with Dislin::curve()
     double* inray = new double[steps];
@@ -63,6 +67,8 @@ int main () {
     }
     g.color("BLUE");
     g.curve(tray, inray, steps);
+
+    std::cout<<std::endl;
 
     //plot x component predicted series
     for (int j=0; j<steps; ++j) {

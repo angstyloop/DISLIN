@@ -1,0 +1,4 @@
+- need to modify runRC() to include Win and input matrices.
+
+- in observation of lorenz, we just feed a single-component vector as the input, and use the other two
+    outputs as experimental data

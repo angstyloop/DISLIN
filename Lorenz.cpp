@@ -5,7 +5,7 @@
 int main() {
     // simulate lorenz system
 
-    const int NUMIT = 10000; //weird bug: if NUMIT is any larger than 261922, DifEq segfaults
+    const int NUMIT = 30000;
     
     const int d = 3;
 
@@ -21,7 +21,7 @@ int main() {
         ,   *zout= new double[NUMIT]
         ,   *tray= new double[NUMIT]
         ,    a[d]= {1, 1, 1}
-        ,      dt= .01
+        ,      dt= .001
         ;
 
     // make a dif eq solver object with
